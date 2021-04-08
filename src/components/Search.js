@@ -3,55 +3,45 @@ import axios from "axios";
 
 const Search = () => {
   const [term, setTerm] = useState('');
+  const [debouncedTerm, setDebouncedTerm] = useState('');
   const [results, setResults] = useState([]);
 
-  // alternative way to use useEffect with promises
+
+  // using useEffect, setting a throttling timer and a debouncing term, so
+  // it wont generate an additional request and only after typing and waiting for 1 second
   useEffect(() => {
-    if (!term) return;
-    // setting a throttle/debouce timer
-    const timeoutId = setTimeout(() => {
-      axios.get('https://en.wikipedia.org/w/api.php',
-        {
-          params: {
-            action: 'query',
-            format: 'json',
-            list: 'search',
-            origin: '*',
-            srsearch: term
-          }
-        })
-        .then(({ data }) => { // destructuring to reach the response
-          setResults(data?.query?.search);
-        }).catch((err) => {
-          console.log(err.message);
-        });
-    }, 500); // throttle timer of 500 ms
-
-    // during cleanup, clear the timer, just when user changes the input
+    const timerId = setTimeout(() => {
+      setDebouncedTerm(term)
+    }, 1000);
     return () => {
-      clearTimeout(timeoutId);
+      // during cleanup, clear the timer, just when user changes the input
+      clearTimeout(timerId)
     };
+  }, [term])
 
-  }, [term]);
+  // you can use useEffect more than once!
 
-  // useEffect(() => {
-  //   const search = async () => {
-  //     const { data } = await axios.get('https://en.wikipedia.org/w/api.php', {
-  //       params: {
-  //         action: 'query',
-  //         list: 'search',
-  //         origin: '*',
-  //         format: 'json',
-  //         srsearch: debouncedTerm,
-  //       },
-  //     });
+  // alternative way to use useEffect with promises, this will run the request using the debouncedTerm
+  useEffect(() => {
+    if (!debouncedTerm) return; // only search if there is a term
+    // setting a throttle/debouce timer
+    axios.get('https://en.wikipedia.org/w/api.php',
+      {
+        params: {
+          action: 'query',
+          format: 'json',
+          list: 'search',
+          origin: '*',
+          srsearch: debouncedTerm
+        }
+      })
+      .then(({ data }) => { // destructuring to reach the response
+        setResults(data?.query?.search);
+      }).catch((err) => {
+        console.log(err.message);
+      });
 
-  //     setResults(data.query.search);
-  //   };
-  //   if (debouncedTerm) {
-  //     search();
-  //   }
-  // }, [debouncedTerm]);
+  }, [debouncedTerm]); // only search if the term has changed!
 
   const renderedResults = results.map((result) => {
     return (

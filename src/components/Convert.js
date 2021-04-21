@@ -20,7 +20,7 @@ const Convert = ({ language, text }) => {
       params: {
         q: debouncedText,
         target: language.value,
-        key: 'XXXX'
+        key: process.env.REACT_APP_TRANSLATE_KEY
       }
     }).then(({ data }) => {
       setTranslated(data?.data?.translations?.pop()?.translatedText);
